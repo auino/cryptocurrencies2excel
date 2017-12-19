@@ -1,0 +1,12 @@
+[
+	{ "symbol": "BTC", "amount": 1.0 },
+	{ "symbol": "ETH", "amount": 3.123 },
+	{ "symbol": "LTC", "amount": 2.246 },
+	{ "symbol": "XRP", "amount": 123.456 },
+	{ "symbol": "XEM", "amount": 234 },
+	{ "symbol": "ADA", "amount": 100 },
+	{ "symbol": "BCH", "amount": 200 },
+	{ "symbol": "XMR", "amount": 300 },
+	{ "symbol": "BTG", "amount": 400 },
+	{ "symbol": "BCC", "amount": 500 }
+]

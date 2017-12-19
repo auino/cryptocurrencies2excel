@@ -4,6 +4,8 @@ import datetime
 import openpyxl
 
 TEMPLATE_FILE = 'template.xlsx'
+WALLET_FILE = 'wallet.json'
+
 URL = "https://api.coinmarketcap.com/v1/ticker/"
 
 COLUMN_INDEX = 'A'
@@ -41,6 +43,14 @@ response = urllib.urlopen(URL)
 data = json.loads(response.read())
 
 xfile = openpyxl.load_workbook(TEMPLATE_FILE)
+
+walletdata = json.load(open(WALLET_FILE))
+sheets_wallets = xfile.get_sheet_by_name('Wallets')
+row = 4
+for w in walletdata:
+	sheets_wallets['A'+str(row)] = w['symbol']
+	sheets_wallets['B'+str(row)] = w['amount']
+	row += 1
 
 sheet_stats = xfile.get_sheet_by_name('Statistics')
 sheet_stats['B2'] = datetime.datetime.now()
