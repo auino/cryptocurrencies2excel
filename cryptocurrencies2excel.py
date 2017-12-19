@@ -39,6 +39,8 @@ def storeData(sheet, row, col, data, f):
 	if d is None: return
 	sheet[col+str(row)] = d
 
+nowTime = datetime.datetime.now()
+
 response = urllib.urlopen(URL)
 data = json.loads(response.read())
 
@@ -46,14 +48,16 @@ xfile = openpyxl.load_workbook(TEMPLATE_FILE)
 
 walletdata = json.load(open(WALLET_FILE))
 sheets_wallets = xfile.get_sheet_by_name('Wallets')
+if len(walletdata) > 10: walletdata = walletdata[:10]
 row = 4
 for w in walletdata:
 	sheets_wallets['A'+str(row)] = w['symbol']
 	sheets_wallets['B'+str(row)] = w['amount']
 	row += 1
+sheets_wallets['B14'] = nowTime
 
 sheet_stats = xfile.get_sheet_by_name('Statistics')
-sheet_stats['B2'] = datetime.datetime.now()
+sheet_stats['B2'] = nowTime
 sheet_stats['B3'].value = '=HYPERLINK("'+URL+'", "'+URL+'")'
 sheet = xfile.get_sheet_by_name('Data')
 row = 2
