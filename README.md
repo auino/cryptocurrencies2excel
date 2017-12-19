@@ -40,7 +40,7 @@ A new `ouput.xlsx` file will be created on the working directory, including upda
 
 ### External contributions ###
 
-You are welcome to contribute this program (mainly, on the [template.xlsx](https://github.com/auino/cryptocurrencies2excel/template.xlsx) file) in order to improve the output file format to be generated.
+You are welcome to contribute this program (mainly, on the [template.xlsx](https://github.com/auino/cryptocurrencies2excel/blob/master/template.xlsx) file) in order to improve the output file format to be generated.
 
 ### Contacts ###
 
