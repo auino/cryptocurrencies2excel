@@ -4,7 +4,7 @@ import datetime
 import openpyxl
 
 TEMPLATE_FILE = 'template.xlsx'
-WALLET_FILE = 'wallet.json'
+WALLET_FILE = 'wallets.json'
 
 URL = "https://api.coinmarketcap.com/v1/ticker/"
 
