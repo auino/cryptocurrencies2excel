@@ -22,9 +22,20 @@ COLUMN_AVAILABLESUPPLY = 'M'
 COLUMN_RANK = 'N'
 COLUMN_LASTUPDATED = 'O'
 
-def storeData(sheet, row, col, data):
-	if data is None: return
-	sheet[col+str(row)] = data
+def toint(v):
+	try: return int(v)
+	except: return None
+def tofloat(v):
+	try: return float(v)
+	except: return None
+def tostr(v):
+	try: return str(v)
+	except: return None
+
+def storeData(sheet, row, col, data, f):
+	d = f(data)
+	if d is None: return
+	sheet[col+str(row)] = d
 
 response = urllib.urlopen(URL)
 data = json.loads(response.read())
@@ -33,26 +44,26 @@ xfile = openpyxl.load_workbook(TEMPLATE_FILE)
 
 sheet_stats = xfile.get_sheet_by_name('Statistics')
 sheet_stats['B2'] = datetime.datetime.now()
-sheet_stats['B3'] = URL
+sheet_stats['B3'].value = '=HYPERLINK("'+URL+'", "'+URL+'")'
 sheet = xfile.get_sheet_by_name('Data')
 row = 2
 for x in data:
 	print x
-	storeData(sheet, row, COLUMN_INDEX, row-1)
-	storeData(sheet, row, COLUMN_NAME, x['name'])
-	storeData(sheet, row, COLUMN_SYMBOL, x['symbol'])
-	storeData(sheet, row, COLUMN_PRICEUSD, x['price_usd'])
-	storeData(sheet, row, COLUMN_PRICEBTC, x['price_btc'])
-	storeData(sheet, row, COLUMN_MARKETCAPUSD, x['market_cap_usd'])
-	storeData(sheet, row, COLUMN_24HVOLUMEUSD, x['24h_volume_usd'])
-	storeData(sheet, row, COLUMN_PERCCHANGE1H, x['percent_change_1h'])
-	storeData(sheet, row, COLUMN_PERCCHANGE24H, x['percent_change_24h'])
-	storeData(sheet, row, COLUMN_PERCCHANGE7D, x['percent_change_7d'])
-	storeData(sheet, row, COLUMN_MAXSUPPLY, x['max_supply'])
-	storeData(sheet, row, COLUMN_TOTALSUPPLY, x['total_supply'])
-	storeData(sheet, row, COLUMN_AVAILABLESUPPLY, x['available_supply'])
-	storeData(sheet, row, COLUMN_RANK, x['rank'])
-	storeData(sheet, row, COLUMN_LASTUPDATED, x['last_updated'])
+	storeData(sheet, row, COLUMN_INDEX, row-1, toint)
+	storeData(sheet, row, COLUMN_NAME, x['name'], tostr)
+	storeData(sheet, row, COLUMN_SYMBOL, x['symbol'], tostr)
+	storeData(sheet, row, COLUMN_PRICEUSD, x['price_usd'], tofloat)
+	storeData(sheet, row, COLUMN_PRICEBTC, x['price_btc'], tofloat)
+	storeData(sheet, row, COLUMN_MARKETCAPUSD, x['market_cap_usd'], tofloat)
+	storeData(sheet, row, COLUMN_24HVOLUMEUSD, x['24h_volume_usd'], tofloat)
+	storeData(sheet, row, COLUMN_PERCCHANGE1H, x['percent_change_1h'], tofloat)
+	storeData(sheet, row, COLUMN_PERCCHANGE24H, x['percent_change_24h'], tofloat)
+	storeData(sheet, row, COLUMN_PERCCHANGE7D, x['percent_change_7d'], tofloat)
+	storeData(sheet, row, COLUMN_MAXSUPPLY, x['max_supply'], tofloat)
+	storeData(sheet, row, COLUMN_TOTALSUPPLY, x['total_supply'], tofloat)
+	storeData(sheet, row, COLUMN_AVAILABLESUPPLY, x['available_supply'], tofloat)
+	storeData(sheet, row, COLUMN_RANK, x['rank'], toint)
+	storeData(sheet, row, COLUMN_LASTUPDATED, x['last_updated'], toint)
 	row += 1
 xfile.save('output.xlsx')
 
