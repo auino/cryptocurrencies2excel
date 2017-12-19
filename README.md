@@ -6,7 +6,7 @@ This allows you to configure your template to calculate compound data automatica
 
 ### Source ###
 
-The program is based on coinmarketcap API.
+The program is based on [coinmarketcap.com API](https://coinmarketcap.com).
 
 ### Installation ###
 
