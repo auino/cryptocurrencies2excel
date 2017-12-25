@@ -39,7 +39,9 @@ def storeData(sheet, row, col, data, f):
 	if d is None: return
 	sheet[col+str(row)] = d
 
-nowTime = datetime.datetime.now()
+nowDateTime = datetime.datetime.now()
+todayDate = nowDateTime.strftime("%m/%d/%Y")
+todayTime = nowDateTime.strftime("%I:%M %p")
 
 response = urllib.urlopen(URL)
 data = json.loads(response.read())
@@ -54,10 +56,11 @@ for w in walletdata:
 	sheets_wallets['A'+str(row)] = w['symbol']
 	sheets_wallets['B'+str(row)] = w['amount']
 	row += 1
-sheets_wallets['B14'] = nowTime
+sheets_wallets['B15'] = todayDate
+sheets_wallets['C15'] = todayTime
 
 sheet_stats = xfile.get_sheet_by_name('Statistics')
-sheet_stats['B2'] = nowTime
+sheet_stats['B2'] = todayDate+' '+todayTime
 sheet_stats['B3'].value = '=HYPERLINK("'+URL+'", "'+URL+'")'
 sheet = xfile.get_sheet_by_name('Data')
 row = 2
