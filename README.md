@@ -6,7 +6,7 @@ This allows you to configure your template to calculate compound data automatica
 
 ### Source ###
 
-The program is based on [coinmarketcap.com](https://coinmarketcap.com) API.
+The program is based on [CoinMarketCap](https://coinmarketcap.com) API.
 
 ### Installation ###
 
@@ -33,6 +33,9 @@ The program is based on [coinmarketcap.com](https://coinmarketcap.com) API.
 Configuration is only applied to `Wallets` sheet data.
 In order to configure the tool, you have to edit the [wallets.json](https://github.com/auino/cryptocurrencies2excel/blob/master/wallets.json) file by including data about your wallets.
 Data are expressed in JSON format and you have to specify, for each wallet, the symbol (case-sensive; as generated on the `Data` sheet) and the amount of coins you own.
+
+It's also possible to configure the set the conversion fiat currency by changing the `CURRENCY` variable on the main [cryptocurrencies2excel.py](https://github.com/auino/cryptocurrencies2excel/blob/master/cryptocurrencies2excel.py) file (default value is `USD`; for a list of supported values, see [CoinMarketCap's APIs documentation page](https://coinmarketcap.com/api/)).
+In such case, please remember to change the [template.xlsx](https://github.com/auino/cryptocurrencies2excel/blob/master/template.xlsx) file fields format accordingly.
 
 ### Usage ###
 
