@@ -37,6 +37,8 @@ Data are expressed in JSON format and you have to specify, for each wallet, the 
 It's also possible to configure the set the conversion fiat currency by changing the `CURRENCY` variable on the main [cryptocurrencies2excel.py](https://github.com/auino/cryptocurrencies2excel/blob/master/cryptocurrencies2excel.py) file (default value is `USD`; for a list of supported values, see [CoinMarketCap's APIs documentation page](https://coinmarketcap.com/api/)).
 In such case, please remember to change the [template.xlsx](https://github.com/auino/cryptocurrencies2excel/blob/master/template.xlsx) file fields format accordingly.
 
+For additional (minor) settings, inspect the [cryptocurrencies2excel.py](https://github.com/auino/cryptocurrencies2excel/blob/master/cryptocurrencies2excel.py) file.
+
 ### Usage ###
 
 In order to use the program, enter the program directory and run the following command.
