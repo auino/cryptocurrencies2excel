@@ -120,7 +120,7 @@ for r in data['props']['initialState']['cryptocurrency']['listingLatest']['data'
 	storeData(sheet, row, COLUMN_PERCCHANGE7D, r['quote'][CURRENCY.upper()]['percent_change_7d'], tofloat)
 	storeData(sheet, row, COLUMN_MAXSUPPLY, r['max_supply'], tofloat)
 	storeData(sheet, row, COLUMN_TOTALSUPPLY, r['total_supply'], tofloat)
-	storeData(sheet, row, COLUMN_CIRCULATINGSUPPLY, x['circulating_supply'], tofloat)
+	storeData(sheet, row, COLUMN_CIRCULATINGSUPPLY, r['circulating_supply'], tofloat)
 	storeData(sheet, row, COLUMN_RANK, r['rank'], toint)
 	storeData(sheet, row, COLUMN_LASTUPDATED, r['last_updated'], toint)
 	stored_cryptos_count += 1
