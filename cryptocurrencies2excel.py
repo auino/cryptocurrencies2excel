@@ -8,7 +8,7 @@
 # 
 
 import json
-import urllib
+import requests
 import datetime
 import openpyxl
 
@@ -25,7 +25,7 @@ CRYPTOS_NUMBER = 1000
 CRYPTOS_LIMIT = 100
 
 # debug mode enabled?
-DEBUG = False
+DEBUG = True
 
 ###########################
 ### CONFIGURATION END ###
@@ -34,23 +34,23 @@ DEBUG = False
 TEMPLATE_FILE = 'template.xlsx'
 WALLET_FILE = 'wallets.json'
 
-BASE_URL = "https://api.coinmarketcap.com/v1/ticker/?convert="+CURRENCY.upper()
+#BASE_URL = "https://api.coinmarketcap.com/v1/ticker/?convert="+CURRENCY.upper()
+BASE_URL = "https://coinmarketcap.com"
 
 COLUMN_INDEX = 'A'
 COLUMN_NAME = 'B'
 COLUMN_SYMBOL = 'C'
 COLUMN_PRICE = 'D'
-COLUMN_PRICEBTC = 'E'
-COLUMN_MARKETCAP = 'F'
-COLUMN_24HVOLUME = 'G'
-COLUMN_PERCCHANGE1H = 'H'
-COLUMN_PERCCHANGE24H = 'I'
-COLUMN_PERCCHANGE7D = 'J'
-COLUMN_MAXSUPPLY = 'K'
-COLUMN_TOTALSUPPLY = 'L'
-COLUMN_AVAILABLESUPPLY = 'M'
-COLUMN_RANK = 'N'
-COLUMN_LASTUPDATED = 'O'
+COLUMN_MARKETCAP = 'E'
+COLUMN_24HVOLUME = 'F'
+COLUMN_PERCCHANGE1H = 'G'
+COLUMN_PERCCHANGE24H = 'H'
+COLUMN_PERCCHANGE7D = 'I'
+COLUMN_MAXSUPPLY = 'J'
+COLUMN_TOTALSUPPLY = 'K'
+COLUMN_CIRCULATINGSUPPLY = 'L'
+COLUMN_RANK = 'M'
+COLUMN_LASTUPDATED = 'N'
 
 def toint(v):
 	try: return int(v)
@@ -91,46 +91,38 @@ sheet_stats['B2'] = todayDate+' '+todayTime
 sheet_stats['B3'].value = '=HYPERLINK("'+BASE_URL+'", "'+BASE_URL+'")'
 sheet = xfile.get_sheet_by_name('Data')
 stored_cryptos_count = 0
-while stored_cryptos_count < CRYPTOS_NUMBER:
-	URL = BASE_URL+"&start="+str(stored_cryptos_count)+"&limit="+str(CRYPTOS_LIMIT)
-	if DEBUG: print URL
-	response = urllib.urlopen(URL)
-	data = json.loads(response.read())
-	for x in data:
-		if DEBUG: print x
-		row = stored_cryptos_count + 2
-		storeData(sheet, row, COLUMN_INDEX, row-1, toint)
-		storeData(sheet, row, COLUMN_NAME, x['name'], tostr)
-		storeData(sheet, row, COLUMN_SYMBOL, x['symbol'], tostr)
-		storeData(sheet, row, COLUMN_PRICE, x['price_'+CURRENCY.lower()], tofloat)
-		storeData(sheet, row, COLUMN_PRICEBTC, x['price_btc'], tofloat)
-		storeData(sheet, row, COLUMN_MARKETCAP, x['market_cap_'+CURRENCY.lower()], tofloat)
-		storeData(sheet, row, COLUMN_24HVOLUME, x['24h_volume_'+CURRENCY.lower()], tofloat)
-		storeData(sheet, row, COLUMN_PERCCHANGE1H, x['percent_change_1h'], tofloat)
-		storeData(sheet, row, COLUMN_PERCCHANGE24H, x['percent_change_24h'], tofloat)
-		storeData(sheet, row, COLUMN_PERCCHANGE7D, x['percent_change_7d'], tofloat)
-		storeData(sheet, row, COLUMN_MAXSUPPLY, x['max_supply'], tofloat)
-		storeData(sheet, row, COLUMN_TOTALSUPPLY, x['total_supply'], tofloat)
-		storeData(sheet, row, COLUMN_AVAILABLESUPPLY, x['available_supply'], tofloat)
-		storeData(sheet, row, COLUMN_RANK, x['rank'], toint)
-		storeData(sheet, row, COLUMN_LASTUPDATED, x['last_updated'], toint)
-		stored_cryptos_count += 1
+
+URL = BASE_URL
+response = requests.get(URL).text
+response = response.split('<script ')
+for r in response:
+	if "__NEXT_DATA__" in r:
+		response = r
+		response = response.split('>')[1]
+		response = response.split('</script')[0]
+		break
+if DEBUG: print(response)
+
+data = json.loads(response)
+
+stored_cryptos_count = 0
+for r in data['props']['initialState']['cryptocurrency']['listingLatest']['data']:
+	row = stored_cryptos_count + 2
+	if DEBUG: print(r)
+	storeData(sheet, row, COLUMN_INDEX, row-1, toint)
+	storeData(sheet, row, COLUMN_NAME, r['name'], tostr)
+	storeData(sheet, row, COLUMN_SYMBOL, r['symbol'], tostr)
+	storeData(sheet, row, COLUMN_PRICE, r['quote'][CURRENCY.upper()]['price'], tofloat)
+	storeData(sheet, row, COLUMN_MARKETCAP, r['quote'][CURRENCY.upper()]['market_cap'], tofloat)
+	storeData(sheet, row, COLUMN_24HVOLUME, r['quote'][CURRENCY.upper()]['volume_24h'], tofloat)
+	storeData(sheet, row, COLUMN_PERCCHANGE1H, r['quote'][CURRENCY.upper()]['percent_change_1h'], tofloat)
+	storeData(sheet, row, COLUMN_PERCCHANGE24H, r['quote'][CURRENCY.upper()]['percent_change_24h'], tofloat)
+	storeData(sheet, row, COLUMN_PERCCHANGE7D, r['quote'][CURRENCY.upper()]['percent_change_7d'], tofloat)
+	storeData(sheet, row, COLUMN_MAXSUPPLY, r['max_supply'], tofloat)
+	storeData(sheet, row, COLUMN_TOTALSUPPLY, r['total_supply'], tofloat)
+	storeData(sheet, row, COLUMN_CIRCULATINGSUPPLY, x['circulating_supply'], tofloat)
+	storeData(sheet, row, COLUMN_RANK, r['rank'], toint)
+	storeData(sheet, row, COLUMN_LASTUPDATED, r['last_updated'], toint)
+	stored_cryptos_count += 1
+
 xfile.save('output.xlsx')
-
-exit()
-
-rb = open_workbook(TEMPLATE_FILE)
-#wb = copy(rb)
-wb = rb
-
-s = wb.get_sheet(0)
-row = 1
-for x in data:
-	if DEBUG: print x
-	s.write(row, COLUMN_INDEX, row)
-	s.write(row, COLUMN_NAME, x['name'])
-	s.write(row, COLUMN_SYMBOL, x['symbol'])
-	s.write(row, COLUMN_PRICE, x['price_'+CURRENCY.lower()])
-	s.write(row, COLUMN_PRICEBTC, x['price_btc'])
-	row += 1
-wb.save('output.xls')
