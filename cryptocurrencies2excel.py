@@ -7,10 +7,25 @@
 # GitHub project URL: https://github.com/auino/cryptocurrencies2excel
 # 
 
+import sys
+
+PATH_LIST = [
+	'/usr/local/Cellar/python/3.7.7/Frameworks/Python.framework/Versions/3.7/lib/python37.zip',
+	'/usr/local/Cellar/python/3.7.7/Frameworks/Python.framework/Versions/3.7/lib/python3.7',
+	'/usr/local/Cellar/python/3.7.7/Frameworks/Python.framework/Versions/3.7/lib/python3.7/lib-dynload',
+	'/Users/enricocambiaso/Library/Python/3.7/lib/python/site-packages',
+	'/usr/local/lib/python3.7/site-packages'
+]
+
+for e in PATH_LIST:
+	if not e in sys.path: sys.path.append(e)
+
 import json
-import requests
 import datetime
 import openpyxl
+
+try: import requests
+except: import workflow.web as requests
 
 ###########################
 ### CONFIGURATION BEGIN ###
@@ -27,6 +42,9 @@ CRYPTOS_LIMIT = 100
 # debug mode enabled?
 DEBUG = True
 
+# ho many pages to scroll?
+MAX_PAGES = 2
+
 ###########################
 ### CONFIGURATION END ###
 ###########################
@@ -35,7 +53,7 @@ TEMPLATE_FILE = 'template.xlsx'
 WALLET_FILE = 'wallets.json'
 
 #BASE_URL = "https://api.coinmarketcap.com/v1/ticker/?convert="+CURRENCY.upper()
-BASE_URL = "https://coinmarketcap.com"
+BASE_URL = "https://coinmarketcap.com/?page={}"
 
 COLUMN_INDEX = 'A'
 COLUMN_NAME = 'B'
@@ -67,6 +85,19 @@ def storeData(sheet, row, col, data, f):
 	if d is None: return
 	sheet[col+str(row)] = d
 
+def transformtodata(data):
+	r = []
+	# getting keys
+	keys = data['props']['initialState']['cryptocurrency']['listingLatest']['data'][0]['keysArr']
+	keys += data['props']['initialState']['cryptocurrency']['listingLatest']['data'][0]['excludeProps']
+	#for k in data['props']['initialState']['cryptocurrency']['listingLatest']['data'][0]['excludeProps']: keys.remove(k)
+	values = data['props']['initialState']['cryptocurrency']['listingLatest']['data'][1:]
+	for v in values:
+		e = {}
+		for i in range(0, len(v)): e[keys[i]] = v[i]
+		r.append(e)
+	return r
+
 nowDateTime = datetime.datetime.now()
 todayDate = nowDateTime.strftime("%m/%d/%Y")
 todayTime = nowDateTime.strftime("%I:%M %p")
@@ -74,8 +105,8 @@ todayTime = nowDateTime.strftime("%I:%M %p")
 xfile = openpyxl.load_workbook(TEMPLATE_FILE)
 
 walletdata = json.load(open(WALLET_FILE))
-sheets_wallets = xfile.get_sheet_by_name('Wallets')
-if len(walletdata) > 10: walletdata = walletdata[:10]
+sheets_wallets = xfile['Wallets']
+if len(walletdata) > 20: walletdata = walletdata[:20]
 row = 4
 for w in walletdata:
 	sheets_wallets['A'+str(row)] = w['symbol']
@@ -83,46 +114,51 @@ for w in walletdata:
 	try: sheets_wallets['C'+str(row)] = w['description']
 	except: pass
 	row += 1
-sheets_wallets['B15'] = todayDate
-sheets_wallets['C15'] = todayTime
 
-sheet_stats = xfile.get_sheet_by_name('Statistics')
+import time
+time.sleep(10)
+sheets_wallets['B25'] = todayDate
+sheets_wallets['C25'] = todayTime
+
+sheet_stats = xfile['Statistics']
 sheet_stats['B2'] = todayDate+' '+todayTime
 sheet_stats['B3'].value = '=HYPERLINK("'+BASE_URL+'", "'+BASE_URL+'")'
-sheet = xfile.get_sheet_by_name('Data')
-stored_cryptos_count = 0
-
-URL = BASE_URL
-response = requests.get(URL).text
-response = response.split('<script ')
-for r in response:
-	if "__NEXT_DATA__" in r:
-		response = r
-		response = response.split('>')[1]
-		response = response.split('</script')[0]
-		break
-if DEBUG: print(response)
-
-data = json.loads(response)
+sheet = xfile['Data']
 
 stored_cryptos_count = 0
-for r in data['props']['initialState']['cryptocurrency']['listingLatest']['data']:
-	row = stored_cryptos_count + 2
-	if DEBUG: print(r)
-	storeData(sheet, row, COLUMN_INDEX, row-1, toint)
-	storeData(sheet, row, COLUMN_NAME, r['name'], tostr)
-	storeData(sheet, row, COLUMN_SYMBOL, r['symbol'], tostr)
-	storeData(sheet, row, COLUMN_PRICE, r['quote'][CURRENCY.upper()]['price'], tofloat)
-	storeData(sheet, row, COLUMN_MARKETCAP, r['quote'][CURRENCY.upper()]['market_cap'], tofloat)
-	storeData(sheet, row, COLUMN_24HVOLUME, r['quote'][CURRENCY.upper()]['volume_24h'], tofloat)
-	storeData(sheet, row, COLUMN_PERCCHANGE1H, r['quote'][CURRENCY.upper()]['percent_change_1h'], tofloat)
-	storeData(sheet, row, COLUMN_PERCCHANGE24H, r['quote'][CURRENCY.upper()]['percent_change_24h'], tofloat)
-	storeData(sheet, row, COLUMN_PERCCHANGE7D, r['quote'][CURRENCY.upper()]['percent_change_7d'], tofloat)
-	storeData(sheet, row, COLUMN_MAXSUPPLY, r['max_supply'], tofloat)
-	storeData(sheet, row, COLUMN_TOTALSUPPLY, r['total_supply'], tofloat)
-	storeData(sheet, row, COLUMN_CIRCULATINGSUPPLY, r['circulating_supply'], tofloat)
-	storeData(sheet, row, COLUMN_RANK, r['rank'], toint)
-	storeData(sheet, row, COLUMN_LASTUPDATED, r['last_updated'], toint)
-	stored_cryptos_count += 1
+
+for page in range(1, MAX_PAGES+1):
+	URL = BASE_URL.format(page)
+	response = requests.get(URL).text
+	response = response.split('<script ')
+	for r in response:
+		if '"priceChange"' in r:
+			r = r[r.index('>')+1:]
+			r = r[:r.index('</script>')]
+			response = r
+			break
+	if DEBUG: print(response)
+
+	data = json.loads(response)
+	data = transformtodata(data)
+
+	for r in data:
+		row = stored_cryptos_count + 2
+		if DEBUG: print(r)
+		storeData(sheet, row, COLUMN_INDEX, row-1, toint)
+		storeData(sheet, row, COLUMN_NAME, r['name'], tostr)
+		storeData(sheet, row, COLUMN_SYMBOL, r['symbol'], tostr)
+		storeData(sheet, row, COLUMN_PRICE, r['quote.{}.price'.format(CURRENCY.upper())], tofloat)
+		storeData(sheet, row, COLUMN_MARKETCAP, r['quote.{}.marketCap'.format(CURRENCY.upper())], tofloat)
+		storeData(sheet, row, COLUMN_24HVOLUME, r['quote.{}.volume24h'.format(CURRENCY.upper())], tofloat)
+		storeData(sheet, row, COLUMN_PERCCHANGE1H, r['quote.{}.percentChange1h'.format(CURRENCY.upper())], tofloat)
+		storeData(sheet, row, COLUMN_PERCCHANGE24H, r['quote.{}.percentChange24h'.format(CURRENCY.upper())], tofloat)
+		storeData(sheet, row, COLUMN_PERCCHANGE7D, r['quote.{}.percentChange7d'.format(CURRENCY.upper())], tofloat)
+		storeData(sheet, row, COLUMN_MAXSUPPLY, r.get('maxSupply'), tofloat)
+		storeData(sheet, row, COLUMN_TOTALSUPPLY, r.get('totalSupply'), tofloat)
+		storeData(sheet, row, COLUMN_CIRCULATINGSUPPLY, r.get('circulatingSupply'), tofloat)
+		storeData(sheet, row, COLUMN_RANK, r.get('rank'), toint)
+		storeData(sheet, row, COLUMN_LASTUPDATED, r.get('lastUpdated'), toint)
+		stored_cryptos_count += 1
 
 xfile.save('output.xlsx')
