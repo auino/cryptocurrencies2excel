@@ -7,25 +7,10 @@
 # GitHub project URL: https://github.com/auino/cryptocurrencies2excel
 # 
 
-import sys
-
-PATH_LIST = [
-	'/usr/local/Cellar/python/3.7.7/Frameworks/Python.framework/Versions/3.7/lib/python37.zip',
-	'/usr/local/Cellar/python/3.7.7/Frameworks/Python.framework/Versions/3.7/lib/python3.7',
-	'/usr/local/Cellar/python/3.7.7/Frameworks/Python.framework/Versions/3.7/lib/python3.7/lib-dynload',
-	'/Users/enricocambiaso/Library/Python/3.7/lib/python/site-packages',
-	'/usr/local/lib/python3.7/site-packages'
-]
-
-for e in PATH_LIST:
-	if not e in sys.path: sys.path.append(e)
-
 import json
 import datetime
 import openpyxl
-
-try: import requests
-except: import workflow.web as requests
+import requests
 
 ###########################
 ### CONFIGURATION BEGIN ###
@@ -34,16 +19,11 @@ except: import workflow.web as requests
 # conversion fiat currency
 CURRENCY = 'USD'
 
-# how many cryptos to be retrieved?
-CRYPTOS_NUMBER = 1000
-# how many crypto data for each request?
-CRYPTOS_LIMIT = 100
-
 # debug mode enabled?
-DEBUG = True
+DEBUG = False
 
-# ho many pages to scroll?
-MAX_PAGES = 2
+# ho many pages to scroll? 0 to match all symbols in wallet
+MAX_PAGES = 0
 
 ###########################
 ### CONFIGURATION END ###
@@ -52,23 +32,22 @@ MAX_PAGES = 2
 TEMPLATE_FILE = 'template.xlsx'
 WALLET_FILE = 'wallets.json'
 
-#BASE_URL = "https://api.coinmarketcap.com/v1/ticker/?convert="+CURRENCY.upper()
 BASE_URL = "https://coinmarketcap.com/?page={}"
 
-COLUMN_INDEX = 'A'
-COLUMN_NAME = 'B'
-COLUMN_SYMBOL = 'C'
-COLUMN_PRICE = 'D'
-COLUMN_MARKETCAP = 'E'
-COLUMN_24HVOLUME = 'F'
-COLUMN_PERCCHANGE1H = 'G'
-COLUMN_PERCCHANGE24H = 'H'
-COLUMN_PERCCHANGE7D = 'I'
-COLUMN_MAXSUPPLY = 'J'
-COLUMN_TOTALSUPPLY = 'K'
-COLUMN_CIRCULATINGSUPPLY = 'L'
-COLUMN_RANK = 'M'
-COLUMN_LASTUPDATED = 'N'
+COLUMN_INDEX = 1
+COLUMN_NAME = 2
+COLUMN_SYMBOL = 3
+COLUMN_PRICE = 4
+COLUMN_MARKETCAP = 5
+COLUMN_24HVOLUME = 6
+COLUMN_PERCCHANGE1H = 7
+COLUMN_PERCCHANGE24H = 8
+COLUMN_PERCCHANGE7D = 9
+COLUMN_MAXSUPPLY = 10
+COLUMN_TOTALSUPPLY = 11
+COLUMN_CIRCULATINGSUPPLY = 12
+COLUMN_RANK = 13
+COLUMN_LASTUPDATED = 14
 
 def toint(v):
 	try: return int(v)
@@ -83,19 +62,24 @@ def tostr(v):
 def storeData(sheet, row, col, data, f):
 	d = f(data)
 	if d is None: return
-	sheet[col+str(row)] = d
+	sheet.cell(row=row, column=col).value = d
 
 def transformtodata(data):
 	r = []
 	# getting keys
-	keys = data['props']['initialState']['cryptocurrency']['listingLatest']['data'][0]['keysArr']
-	keys += data['props']['initialState']['cryptocurrency']['listingLatest']['data'][0]['excludeProps']
-	#for k in data['props']['initialState']['cryptocurrency']['listingLatest']['data'][0]['excludeProps']: keys.remove(k)
-	values = data['props']['initialState']['cryptocurrency']['listingLatest']['data'][1:]
-	for v in values:
-		e = {}
-		for i in range(0, len(v)): e[keys[i]] = v[i]
-		r.append(e)
+	data = data.get('props').get('dehydratedState').get('queries')[1].get('state').get('data').get('data').get('listing').get('cryptoCurrencyList')
+	r = {}
+	for e in data:
+		k = e.get('symbol')
+		r[k] = {'symbol':k, 'name':e.get('name'), 'circulatingSupply':e.get('circulatingSupply'), 'rank':e.get('cmcRank'), 'maxSupply':e.get('maxSupply'), 'totalSupply':e.get('totalSupply'), 'lastUpdated':e.get('lastUpdated')}
+		if DEBUG: r[k]['data'] = e
+		for q in e.get('quotes'):
+			r[k]['quote.{}.price'.format(q.get('name'))] = q.get('price')
+			r[k]['quote.{}.marketCap'.format(CURRENCY.upper())] = q.get('marketCap')
+			r[k]['quote.{}.volume24h'.format(CURRENCY.upper())] = q.get('volume24h')
+			r[k]['quote.{}.percentChange1h'.format(CURRENCY.upper())] = q.get('percentChange1h')
+			r[k]['quote.{}.percentChange24h'.format(CURRENCY.upper())] = q.get('percentChange24h')
+			r[k]['quote.{}.percentChange7d'.format(CURRENCY.upper())] = q.get('percentChange7d')
 	return r
 
 nowDateTime = datetime.datetime.now()
@@ -107,8 +91,11 @@ xfile = openpyxl.load_workbook(TEMPLATE_FILE)
 walletdata = json.load(open(WALLET_FILE))
 sheets_wallets = xfile['Wallets']
 if len(walletdata) > 20: walletdata = walletdata[:20]
+
+wallet_symbols = []
 row = 4
 for w in walletdata:
+	wallet_symbols.append(w['symbol'])
 	sheets_wallets['A'+str(row)] = w['symbol']
 	sheets_wallets['B'+str(row)] = w['amount']
 	try: sheets_wallets['C'+str(row)] = w['description']
@@ -127,7 +114,10 @@ sheet = xfile['Data']
 
 stored_cryptos_count = 0
 
-for page in range(1, MAX_PAGES+1):
+page = 0
+while True:
+	page += 1
+	if MAX_PAGES != 0 and page > MAX_PAGES: break
 	URL = BASE_URL.format(page)
 	response = requests.get(URL).text
 	response = response.split('<script ')
@@ -142,9 +132,13 @@ for page in range(1, MAX_PAGES+1):
 	data = json.loads(response)
 	data = transformtodata(data)
 
-	for r in data:
+	for k in data:
 		row = stored_cryptos_count + 2
+		r = data.get(k)
 		if DEBUG: print(r)
+		if MAX_PAGES == 0 and r['symbol'] in wallet_symbols:
+			wallet_symbols.remove(r['symbol'])
+			if len(wallet_symbols) == 0: break
 		storeData(sheet, row, COLUMN_INDEX, row-1, toint)
 		storeData(sheet, row, COLUMN_NAME, r['name'], tostr)
 		storeData(sheet, row, COLUMN_SYMBOL, r['symbol'], tostr)
@@ -158,7 +152,8 @@ for page in range(1, MAX_PAGES+1):
 		storeData(sheet, row, COLUMN_TOTALSUPPLY, r.get('totalSupply'), tofloat)
 		storeData(sheet, row, COLUMN_CIRCULATINGSUPPLY, r.get('circulatingSupply'), tofloat)
 		storeData(sheet, row, COLUMN_RANK, r.get('rank'), toint)
-		storeData(sheet, row, COLUMN_LASTUPDATED, r.get('lastUpdated'), toint)
+		storeData(sheet, row, COLUMN_LASTUPDATED, r.get('lastUpdated'), tostr)
 		stored_cryptos_count += 1
-
+	else: continue
+	break
 xfile.save('output.xlsx')
