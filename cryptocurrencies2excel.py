@@ -90,7 +90,9 @@ xfile = openpyxl.load_workbook(TEMPLATE_FILE)
 
 walletdata = json.load(open(WALLET_FILE))
 sheets_wallets = xfile['Wallets']
-if len(walletdata) > 20: walletdata = walletdata[:20]
+if len(walletdata) > 50:
+	print('Truncating data to 50 elements')
+	walletdata = walletdata[:50]
 
 wallet_symbols = []
 row = 4
@@ -100,12 +102,14 @@ for w in walletdata:
 	sheets_wallets['B'+str(row)] = w['amount']
 	try: sheets_wallets['C'+str(row)] = w['description']
 	except: pass
+	try: sheets_wallets['D'+str(row)] = ('' if w['reference'] is None else w['reference'])
+	except: pass
 	row += 1
 
 import time
 time.sleep(10)
-sheets_wallets['B25'] = todayDate
-sheets_wallets['C25'] = todayTime
+sheets_wallets['B55'] = todayDate
+sheets_wallets['C55'] = todayTime
 
 sheet_stats = xfile['Statistics']
 sheet_stats['B2'] = todayDate+' '+todayTime

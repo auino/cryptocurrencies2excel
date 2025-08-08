@@ -1,7 +1,7 @@
 [
-	{ "symbol": "BTC", "amount": 1.0, "description": "Personal BTC wallet" },
-	{ "symbol": "ETH", "amount": 3.123, "description": "Personal Coinbase wallet" },
-	{ "symbol": "LTC", "amount": 2.246, "description": "Mark's wallet on Binance" },
+	{ "symbol": "BTC", "amount": 1.0, "description": "Personal BTC wallet", "reference": "my_wallet_address" },
+	{ "symbol": "ETH", "amount": 3.123, "description": "Personal Coinbase wallet", "reference": "my_wallet_address" },
+	{ "symbol": "LTC", "amount": 2.246, "description": "Mark's wallet on Binance", "reference": "my_wallet_address" },
 	{ "symbol": "XRP", "amount": 123.456, "description": "" },
 	{ "symbol": "XEM", "amount": 234, "description": "" },
 	{ "symbol": "ADA", "amount": 100, "description": "" },
